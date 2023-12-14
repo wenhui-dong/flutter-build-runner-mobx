@@ -143,12 +143,19 @@ function activate(context) {
                 "build_runner watch",
                 "build_runner build --delete-conflicting-outputs",
                 "build_runner clean",
+                "=========================================================",
                 "fvm build_runner build",
                 "fvm build_runner watch",
                 "fvm build_runner build --delete-conflicting-outputs",
-                "fvm build_runner clean"
+                "fvm build_runner clean",
+                "=========================================================",
+                "flutter pub get",
+                "fvm flutter pub get",
+                "=========================================================",
+                "flutter pub upgrade",
+                "fvm flutter pub upgrade",
             ], { placeHolder: "Select command" });
-            if (!select) {
+            if (!select || select.includes("===============")) {
                 return;
             }
             let type = TypeButton.none;
@@ -162,11 +169,17 @@ function activate(context) {
                 type = TypeButton.clean;
             }
             let str = "";
-            if (select.startsWith("fvm")) {
-                str = `fvm flutter packages pub run ${select}`;
+            if (select.includes("build_runner")) {
+                if (select.startsWith("fvm")) {
+                    let modifiedString = select.replace(new RegExp("fvm ", "g"), "");
+                    str = `fvm flutter packages pub run ${modifiedString}`;
+                }
+                else {
+                    str = `flutter packages pub run ${select}`;
+                }
             }
             else {
-                str = `flutter packages pub run ${select}`;
+                str = select;
             }
             child = cp.spawn(str, [], {
                 windowsVerbatimArguments: true,
