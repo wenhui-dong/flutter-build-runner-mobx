@@ -3,7 +3,9 @@
   "displayName": "flutter-build-runner-mobx",
   "description": "A extension for using MobX in Flutter",
   "version": "0.0.1",
-  "icon": "logo.png",
+  "publisher": "wenhui-dong",
+  "icon": "mobx.png",
+  "repository": "https://github.com/wenhui-dong/flutter-build-runner-mobx",
   "engines": {
     "vscode": "^1.54.0"
   },
