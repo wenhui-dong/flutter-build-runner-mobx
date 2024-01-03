@@ -132,10 +132,10 @@ export function activate(context: vscode.ExtensionContext) {
   myStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 200);
   myStatusBarItem.command = myCommandId;
   context.subscriptions.push(myStatusBarItem);
-  var child: any;
+  var child: any = null;
 
   let disposableBuildRunnerWatch = vscode.commands.registerCommand(myCommandId, async () => {
-    if (child == null) {
+    if (child === null) {
       const select = await vscode.window.showQuickPick([
         "build_runner build",
         "build_runner watch",
@@ -179,7 +179,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
 
-
+      updateButton(TypeButton.wait);
       child = cp.spawn(str, [], {
         windowsVerbatimArguments: true,
         cwd: vscode.workspace.rootPath,
@@ -190,29 +190,37 @@ export function activate(context: vscode.ExtensionContext) {
         const log = err.toString();
         outputChannel.appendLine(log);
         updateButton(TypeButton.none);
-        (child as cp.ChildProcessWithoutNullStreams).removeAllListeners();
-        child = null;
-        if (err == 0) {
-          vscode.window.showInformationMessage('build_runner finish');
+
+        if (err === 0) {
+          vscode.window.showInformationMessage(`build_runner close ${err}`);
         } else {
-          throw 'build_runner error';
+          if (err === 65) {
+            vscode.window.showInformationMessage(`No pubspec.lock file found, please run "flutter pub get" first.\n pub finished with exit code ${err}`);
+          }else if(err === 65){
+            vscode.window.showInformationMessage(`Could not find a file named "pubspec.yaml".\n pub finished with exit code ${err}`);
+          }
+          (child as cp.ChildProcessWithoutNullStreams).removeAllListeners();
+          child = null;
+          console.error(`Child process closed with code ${err}`);
         }
+
       });
+
       child.addListener('error', (err: any) => {
         const log = err.toString();
         outputChannel.appendLine(log);
         updateButton(TypeButton.none);
         (child as cp.ChildProcessWithoutNullStreams).removeAllListeners();
         child = null;
-        vscode.window.showInformationMessage('build_runner error');
+        vscode.window.showInformationMessage(`build_runner error:${err}`);
       });
 
 
       child.stdout.on('data', (data: any) => {
         const log = data.toString();
         outputChannel.appendLine(log);
-        if ((data as string).indexOf('Succeeded after') != -1) {
-          if (type == TypeButton.watch) {
+        if ((data as string).indexOf('Succeeded after') !== -1) {
+          if (type === TypeButton.watch) {
             updateButton(TypeButton.unwatch);
           } else {
             updateButton(type);
@@ -242,17 +250,19 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 function updateButton(type: TypeButton) {
-  if (prevNowPlaying && type != TypeButton.loading) {
+  if (prevNowPlaying && type !== TypeButton.loading) {
     clearInterval(prevNowPlaying);
     prevNowPlaying = null;
   }
-  if (type == TypeButton.none || type == TypeButton.build || type == TypeButton.clean) {
+  if (type === TypeButton.wait) {
+    myStatusBarItem.text = `$(file-binary) build_runner waiting`;
+  } else if (type === TypeButton.none || type === TypeButton.build || type === TypeButton.clean) {
     myStatusBarItem.text = `$(file-binary) build_runner`;
-  } else if (type == TypeButton.watch) {
+  } else if (type === TypeButton.watch) {
     myStatusBarItem.text = `$(file-binary) build_runner watch`;
-  } else if (type == TypeButton.unwatch) {
-    myStatusBarItem.text = `$(file-binary) build_runner unwatch`
-  } else if (type == TypeButton.loading) {
+  } else if (type === TypeButton.unwatch) {
+    myStatusBarItem.text = `$(file-binary) build_runner unwatch`;
+  } else if (type === TypeButton.loading) {
     if (!prevNowPlaying) {
       myStatusBarItem.text = `${frame()} build_runner runner`;
       prevNowPlaying = setInterval(() => {
@@ -264,7 +274,7 @@ function updateButton(type: TypeButton) {
 var prevNowPlaying: any = null;
 const frame = elegantSpinner();
 enum TypeButton {
-  none, build, loading, watch, unwatch, clean
+  none, build, loading, watch, unwatch, clean, wait
 }
 
 

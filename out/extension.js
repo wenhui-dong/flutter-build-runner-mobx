@@ -135,9 +135,9 @@ function activate(context) {
     myStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 200);
     myStatusBarItem.command = myCommandId;
     context.subscriptions.push(myStatusBarItem);
-    var child;
+    var child = null;
     let disposableBuildRunnerWatch = vscode.commands.registerCommand(myCommandId, async () => {
-        if (child == null) {
+        if (child === null) {
             const select = await vscode.window.showQuickPick([
                 "build_runner build",
                 "build_runner watch",
@@ -181,6 +181,7 @@ function activate(context) {
             else {
                 str = select;
             }
+            updateButton(TypeButton.wait);
             child = cp.spawn(str, [], {
                 windowsVerbatimArguments: true,
                 cwd: vscode.workspace.rootPath,
@@ -190,13 +191,19 @@ function activate(context) {
                 const log = err.toString();
                 outputChannel.appendLine(log);
                 updateButton(TypeButton.none);
-                child.removeAllListeners();
-                child = null;
-                if (err == 0) {
-                    vscode.window.showInformationMessage('build_runner finish');
+                if (err === 0) {
+                    vscode.window.showInformationMessage(`build_runner close ${err}`);
                 }
                 else {
-                    throw 'build_runner error';
+                    if (err === 65) {
+                        vscode.window.showInformationMessage(`No pubspec.lock file found, please run "flutter pub get" first.\n pub finished with exit code ${err}`);
+                    }
+                    else if (err === 65) {
+                        vscode.window.showInformationMessage(`Could not find a file named "pubspec.yaml".\n pub finished with exit code ${err}`);
+                    }
+                    child.removeAllListeners();
+                    child = null;
+                    console.error(`Child process closed with code ${err}`);
                 }
             });
             child.addListener('error', (err) => {
@@ -205,13 +212,13 @@ function activate(context) {
                 updateButton(TypeButton.none);
                 child.removeAllListeners();
                 child = null;
-                vscode.window.showInformationMessage('build_runner error');
+                vscode.window.showInformationMessage(`build_runner error:${err}`);
             });
             child.stdout.on('data', (data) => {
                 const log = data.toString();
                 outputChannel.appendLine(log);
-                if (data.indexOf('Succeeded after') != -1) {
-                    if (type == TypeButton.watch) {
+                if (data.indexOf('Succeeded after') !== -1) {
+                    if (type === TypeButton.watch) {
                         updateButton(TypeButton.unwatch);
                     }
                     else {
@@ -240,20 +247,23 @@ function activate(context) {
 }
 exports.activate = activate;
 function updateButton(type) {
-    if (prevNowPlaying && type != TypeButton.loading) {
+    if (prevNowPlaying && type !== TypeButton.loading) {
         clearInterval(prevNowPlaying);
         prevNowPlaying = null;
     }
-    if (type == TypeButton.none || type == TypeButton.build || type == TypeButton.clean) {
+    if (type === TypeButton.wait) {
+        myStatusBarItem.text = `$(file-binary) build_runner waiting`;
+    }
+    else if (type === TypeButton.none || type === TypeButton.build || type === TypeButton.clean) {
         myStatusBarItem.text = `$(file-binary) build_runner`;
     }
-    else if (type == TypeButton.watch) {
+    else if (type === TypeButton.watch) {
         myStatusBarItem.text = `$(file-binary) build_runner watch`;
     }
-    else if (type == TypeButton.unwatch) {
+    else if (type === TypeButton.unwatch) {
         myStatusBarItem.text = `$(file-binary) build_runner unwatch`;
     }
-    else if (type == TypeButton.loading) {
+    else if (type === TypeButton.loading) {
         if (!prevNowPlaying) {
             myStatusBarItem.text = `${frame()} build_runner runner`;
             prevNowPlaying = setInterval(() => {
@@ -272,6 +282,7 @@ var TypeButton;
     TypeButton[TypeButton["watch"] = 3] = "watch";
     TypeButton[TypeButton["unwatch"] = 4] = "unwatch";
     TypeButton[TypeButton["clean"] = 5] = "clean";
+    TypeButton[TypeButton["wait"] = 6] = "wait";
 })(TypeButton || (TypeButton = {}));
 function deactivate() { }
 exports.deactivate = deactivate;

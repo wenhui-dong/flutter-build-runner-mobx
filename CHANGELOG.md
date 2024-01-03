@@ -1,7 +1,13 @@
+
+-->
 # Change Log
 
 All notable changes to the "flutter-build-runner-mobx" extension will be documented in this file.
 
+## [0.0.4]
+
+- Add error message
+- Add waiting status
 
 ## [0.0.3]
 
