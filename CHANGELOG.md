@@ -1,8 +1,12 @@
 
--->
 # Change Log
 
 All notable changes to the "flutter-build-runner-mobx" extension will be documented in this file.
+
+## [0.0.5]
+
+- Remove the default field Base
+- Added class name and file name written in camel case
 
 ## [0.0.4]
 
