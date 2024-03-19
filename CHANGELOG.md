@@ -1,7 +1,12 @@
 
+
 # Change Log
 
 All notable changes to the "flutter-build-runner-mobx" extension will be documented in this file.
+
+## [0.0.6]
+
+- Modify class name placeholder
 
 ## [0.0.5]
 
